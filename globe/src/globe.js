@@ -1,20 +1,21 @@
 // TODO:
 // Test other linetypes
 // Incoming data format (more dense data), depending on where on globe... around equator needs to be denser
-// Animation not interval..
-// refactor
+// refactor, scene as top GlobeScene, contains lights + renderer... globe comes in as dependency
 // On interval, pan to different part
 // make interactive (mouse, keys, zoom)
 // calculate and draw + autopan movement paths
 // Staying years animation
-// Inspiration from https://codepen.io/Flamov/pen/MozgXb
 
 
 import * as THREE from 'three';
-// import lines from '../data/no_kernel_full';
+import {default as C} from './config';
+import Camera from './camera';
 import lines from '../data/no_kernel_full_2';
-// import lines from '../data/DEBUG';
 
+
+//////////////////////////////////////////////
+// Helper functions
 var degToRad = function(deg){
 	return deg * Math.PI * 2 / 360;
 };
@@ -29,12 +30,64 @@ var latLonToSphere = function(lat, lon, rad){
 };
 
 
+//////////////////////////////////////////////
+// Globe class
 var Globe = function(){
-	var EARTH_RAD = 20;
-	var SCALE;
-	var OFFSET = 0.00002
-	var MULTIPLIER = 0.0005;//10e-2;
 
+	this.lineData = prepareLineData();
+	this.camera = new Camera();
+	this.scene = initScene();
+	this.earthMesh = initEarthMesh();
+	this.scene.add(this.earthMesh);
+	this.lineGroup = initLineGroup.call(this);
+	this.scene.add(this.lineGroup);
+	this.renderer = initRenderer();
+	var container = document.getElementById('container');
+	container.appendChild(this.renderer.domElement);
+	this.animate();
+
+	if(C.DEBUG){
+		// X=red, Y=green and Z=blue.
+		var axesHelper = new THREE.AxesHelper(15);
+		this.scene.add( axesHelper );
+	}
+};
+
+// Static private
+var initScene = function() {
+	var scene = new THREE.Scene();
+	var light = new THREE.AmbientLight(0x04040c);
+	scene.add(light);
+	return scene;
+};
+
+// Static private
+var initEarthMesh = function(){
+	var earthGeo = new THREE.SphereGeometry(C.globe.EARTH_RAD, 16, 16);
+
+	var earthMat = new THREE.MeshPhongMaterial({
+				transparent: true,
+				opacity: 0.7
+			});
+
+	var earthMesh = new THREE.Mesh(earthGeo, earthMat);
+	earthMesh.position.set(0, 0, 0);
+
+	return earthMesh;
+};
+
+// Static private
+var initRenderer = function(){
+	var renderer = new THREE.WebGLRenderer({antialiasing : true});
+	renderer.setSize(C.globe.WIDTH, C.globe.HEIGHT);
+	renderer.domElement.style.position = 'relative';
+	renderer.setClearColor (0x000000, 1);
+	return renderer;
+};
+
+
+// Static private
+var prepareLineData = function() {
 	var newVals = {};
 	for(var lat in lines){
 		newVals[lat] = [];
@@ -44,7 +97,7 @@ var Globe = function(){
 				skippedLast = true;
 				return;
 			}
-			var inCoords = latLonToSphere(lat, 360/arr.length*i, EARTH_RAD + el*MULTIPLIER );
+			var inCoords = latLonToSphere(lat, 360/arr.length*i, C.globe.EARTH_RAD + el*C.globe.MULTIPLIER );
 			var valToPush = (!newVals[lat].length || skippedLast) ? [inCoords] : inCoords;
 			if(!newVals[lat].length || skippedLast){
 				newVals[lat].push(valToPush);
@@ -54,65 +107,26 @@ var Globe = function(){
 			skippedLast = false;
 		});
 	};
+	return newVals;
+};
 
 
+// Instance private
+var initLineGroup = function(){
+	var lineGroup = new THREE.Group();
 
-
-	var WIDTH = window.innerWidth - 30,
-    HEIGHT = window.innerHeight - 30;
-	var angle = 45,
-	aspect = WIDTH / HEIGHT,
-	near = 0.1,
-	far = 3000;
-
-	var container = document.getElementById('container');
-
-	this.camera = new THREE.PerspectiveCamera(angle, aspect, near, far);
-	this.camera.position.set(-80, 0, 30);
-	// this.camera.position.set(0, 0, 50);
-	this.camera.up.set(0,0,1);
-
-	this.scene = new THREE.Scene();
-
-	// var light = new THREE.SpotLight(0xFFFFFF, 1, 0, Math.PI / 2, 1);
-	var light = new THREE.AmbientLight(0x04040c);
-	// light.position.set(4000, 4000, 1500);
-	// light.target.position.set (1000, 3800, 1000);
-
-	this.scene.add(light);
-
-	var earthGeo = new THREE.SphereGeometry(EARTH_RAD, 16, 16);
-	// var earthMat = new THREE.MeshPhongMaterial();
-	var earthMat = new THREE.MeshPhongMaterial({
-				transparent: true,
-				opacity: 0.7
-			});
-
-	var earthMesh = new THREE.Mesh(earthGeo, earthMat);
-	earthMesh.position.set(0, 0, 0);
-	this.scene.add(earthMesh);
-
-	// LINE GROUP
-	this.lineGroup = new THREE.Group();
-
-	// LINE
-	//create a blue LineBasicMaterial
-	// var materialLine = new THREE.LineBasicMaterial( { color: 0x7722ff } );
 	var materialLine = new THREE.LineBasicMaterial( { color: 0x46ae73 } );
-	for(var lat in newVals){
-		newVals[lat].forEach((arr) => {
+	for(var lat in this.lineData){
+		this.lineData[lat].forEach((arr) => {
 			var geometryLine = new THREE.Geometry();
 			arr.forEach(p =>{
 				geometryLine.vertices.push(new THREE.Vector3( p.x, p.y, p.z) );
 			});
 			var line = new THREE.Line( geometryLine, materialLine );
-			// this.scene.add( line );
-			this.lineGroup.add(line);
+			lineGroup.add(line);
 		});
 	}
-	this.scene.add(this.lineGroup);
-	// END LINE
-
+	return lineGroup;
 	// var curve = new THREE.CatmullRomCurve3( [
 	// 	new THREE.Vector3( -10, 0, 10 ),
 	// 	new THREE.Vector3( -5, 5, 5 ),
@@ -128,24 +142,6 @@ var Globe = function(){
 
 	// // Create the final object to add to the scene
 	// var curveObject = new THREE.Line( geometry, material );
-
-	// X=red, Y=green and Z=blue.
-	var axesHelper = new THREE.AxesHelper(15);
-	this.scene.add( axesHelper );
-
-
-	// this.camera.lookAt( earthMesh.position );
-	this.camera.lookAt( 0,0,0 );
-	//Renderer code. We'll get to this in a moment
-	this.renderer = new THREE.WebGLRenderer({antialiasing : true});
-	this.renderer.setSize(WIDTH, HEIGHT);
-	this.renderer.domElement.style.position = 'relative';
-	this.renderer.setClearColor (0x000000, 1);
-
-
-	container.appendChild(this.renderer.domElement);
-	// this.renderer.autoClear = false;
-	// this.renderer.shadowMap.enabled;// = true;
 };
 
 Globe.prototype.render = function() {
@@ -154,147 +150,13 @@ Globe.prototype.render = function() {
 
 
 Globe.prototype.rotate = function(){
-	this.lineGroup.rotateZ(0.008);
-	// console.log("ROTATION");
+	this.lineGroup.rotateZ(0.004);
 	this.renderer.render(this.scene, this.camera);
 };
 
-Globe.prototype.animate = function(){
-	// requestAnimationFrame(this.rotate.bind(this));
-	// console.log("animate called");
-	// // this.renderer.render();
-	// this.animate();
-	setInterval(() => this.rotate(), 60);
+Globe.prototype.animate = function animate(){
+	this.rotate();
+	requestAnimationFrame(animate.bind(this));
 };
 
-
-
 export default Globe;
-
-
-// import * as THREE from 'three';
-// import lines from '../data/no_kernel';
-
-// var degToRad = function(deg){
-// 	return deg * Math.PI * 2 / 360;
-// };
-// // Athimuth = x = lon
-// // Inclanation = θ = y = lat
-
-
-// // https://en.wikipedia.org/wiki/Spherical_coordinate_system
-// var latLonToSphere = function(lat, lon, rad){
-// 	return {
-// 		x: rad * Math.cos(degToRad(lat))*Math.cos(degToRad(lon)),
-// 		y: rad * Math.cos(degToRad(lat))*Math.sin(degToRad(lon)),
-// 		z: rad * Math.sin(degToRad(lat))
-// 	};
-// };
-
-
-// var Globe = function(){
-// 	var EARTH_RAD = 15;
-// 	var SCALE;
-// 	var MULTIPLIER = 0.0005;//10e-2;
-
-// 	var newVals = {};
-// 	for(var lat in lines){
-// 		newVals[lat] = lines[lat].map((el, i, arr) => {
-// 			return latLonToSphere(lat, 360/arr.length*i, EARTH_RAD + 1 + el*MULTIPLIER )
-// 		});
-// 		// newVals[lat] = [];
-// 		// lines[lat].forEach((el, i, arr) => {
-// 		// 	if(el === -500) { return; }
-// 		// 	newVals[lat].push(latLonToSphere(lat, 360/arr.length*i, EARTH_RAD + 1 + el*MULTIPLIER ));
-// 		// });
-// 	};
-
-
-
-
-// 	var WIDTH = window.innerWidth - 30,
-//     HEIGHT = window.innerHeight - 30;
-// 	var angle = 45,
-// 	aspect = WIDTH / HEIGHT,
-// 	near = 0.1,
-// 	far = 3000;
-
-// 	var container = document.getElementById('container');
-
-// 	this.camera = new THREE.PerspectiveCamera(angle, aspect, near, far);
-// 	this.camera.position.set(-50, 50, 50);
-// 	// this.camera.position.set(0, 0, -50);
-// 	this.camera.up.set(0,0,1);
-
-// 	this.scene = new THREE.Scene();
-
-// 	// var light = new THREE.SpotLight(0xFFFFFF, 1, 0, Math.PI / 2, 1);
-// 	var light = new THREE.AmbientLight(0xFFFFFF);
-// 	// light.position.set(4000, 4000, 1500);
-// 	// light.target.position.set (1000, 3800, 1000);
-
-// 	this.scene.add(light);
-
-// 	var earthGeo = new THREE.SphereGeometry(EARTH_RAD, 16, 16);
-// 	var earthMat = new THREE.MeshPhongMaterial();
-// 	// var earthMat = new THREE.MeshPhongMaterial({
-// 				// transparent: true,
-// 				// opacity: 0.5
-// 			// });
-
-// 	var earthMesh = new THREE.Mesh(earthGeo, earthMat);
-// 	earthMesh.position.set(0, 0, 0);
-// 	this.scene.add(earthMesh);
-
-// 	// LINE
-// 	//create a blue LineBasicMaterial
-// 	var materialLine = new THREE.LineBasicMaterial( { color: 0x7722ff } );
-// 	for(var lat in newVals){
-// 		var geometryLine = new THREE.Geometry();
-// 		newVals[lat].forEach((p,i,arr) => {
-// 			geometryLine.vertices.push(new THREE.Vector3( p.x, p.y, p.z) );
-// 		});
-// 		var line = new THREE.Line( geometryLine, materialLine );
-// 		this.scene.add( line );
-// 	}
-// 	// END LINE
-
-// 	// var curve = new THREE.CatmullRomCurve3( [
-// 	// 	new THREE.Vector3( -10, 0, 10 ),
-// 	// 	new THREE.Vector3( -5, 5, 5 ),
-// 	// 	new THREE.Vector3( 0, 0, 0 ),
-// 	// 	new THREE.Vector3( 5, -5, 5 ),
-// 	// 	new THREE.Vector3( 10, 0, 10 )
-// 	// ] );
-
-// 	// var points = curve.getPoints( 50 );
-// 	// var geometry = new THREE.BufferGeometry().setFromPoints( points );
-
-// 	// var material = new THREE.LineBasicMaterial( { color : 0xff0000 } );
-
-// 	// // Create the final object to add to the scene
-// 	// var curveObject = new THREE.Line( geometry, material );
-
-// 	// X=red, Y=green and Z=blue.
-// 	var axesHelper = new THREE.AxesHelper(15);
-// 	this.scene.add( axesHelper );
-
-
-// 	this.camera.lookAt( earthMesh.position );
-
-// 	//Renderer code. We'll get to this in a moment
-// 	this.renderer = new THREE.WebGLRenderer({antialiasing : true});
-// 	this.renderer.setSize(WIDTH, HEIGHT);
-// 	this.renderer.domElement.style.position = 'relative';
-
-// 	container.appendChild(this.renderer.domElement);
-// 	this.renderer.autoClear = false;
-// 	// this.renderer.shadowMap.enabled;// = true;
-// };
-
-// Globe.prototype.render = function() {
-// 	 this.renderer.render(this.scene, this.camera);
-// };
-
-
-// export default Globe;
