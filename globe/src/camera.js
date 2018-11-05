@@ -1,4 +1,5 @@
-import * as THREE from 'three';
+// import * as THREE from 'three';
+import THREE from '../lib/THREE';
 import {default as C} from './config';
 
 var Camera = function(){

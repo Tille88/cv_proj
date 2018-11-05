@@ -1,14 +1,14 @@
 // TODO:
-// Smaller globe in globe la...
+// On interval, pan to different part LAT LONG
 // Incoming data format (more dense data), depending on where on globe... around equator needs to be denser
 // refactor, scene as top GlobeScene, contains lights + renderer... globe comes in as dependency
-// On interval, pan to different part
-// make interactive (mouse, keys, zoom)
 // calculate and draw + autopan movement paths
 // Staying years animation
 
 
-import * as THREE from 'three';
+// import * as THREE from 'three';
+import THREE from '../lib/THREE';
+
 import {default as C} from './config';
 import Camera from './camera';
 import lines from '../data/no_kernel_full_2';
@@ -45,6 +45,9 @@ var Globe = function(){
 	var container = document.getElementById('container');
 	container.appendChild(this.renderer.domElement);
 	this.animate();
+
+	this.controls = new THREE.OrbitControls( this.camera );
+	this.controls.update();
 
 	if(C.DEBUG){
 		// X=red, Y=green and Z=blue.
