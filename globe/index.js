@@ -3,4 +3,6 @@ import Globe from './src/globe';
 // render();
 var test = new Globe();
 test.render();
+// test.rotate();
+test.animate();
 // console.log("HW!");

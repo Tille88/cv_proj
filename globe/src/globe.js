@@ -1,53 +1,39 @@
 // TODO:
-// Data coming in not correct lat lon!!!
-// Bug of lat lon to sphere coords
-
-// make interactive
+// Test other linetypes
+// Incoming data format (more dense data), depending on where on globe... around equator needs to be denser
+// Animation not interval..
 // refactor
+// On interval, pan to different part
+// make interactive (mouse, keys, zoom)
 // calculate and draw + autopan movement paths
+// Staying years animation
 // Inspiration from https://codepen.io/Flamov/pen/MozgXb
 
 
 import * as THREE from 'three';
-// import lines from '../data/no_kernel';
 // import lines from '../data/no_kernel_full';
-import lines from '../data/DEBUG';
+import lines from '../data/no_kernel_full_2';
+// import lines from '../data/DEBUG';
 
 var degToRad = function(deg){
 	return deg * Math.PI * 2 / 360;
 };
-// Athimuth = x = lon
-// Inclanation = θ = y = lat
-
 
 // https://en.wikipedia.org/wiki/Spherical_coordinate_system
 var latLonToSphere = function(lat, lon, rad){
-	// return {
-	// 		// x: rad * Math.cos(degToRad(lat))*Math.cos(degToRad(lon)),
-	// 		// y: rad * Math.cos(degToRad(lat))*Math.sin(degToRad(lon)),
-	// 		// z: rad * Math.sin(degToRad(lat))
-	// 		x: rad * Math.sin(degToRad(lat))*Math.cos(degToRad(lon)),
-	// 		y: rad * Math.sin(degToRad(lat))*Math.sin(degToRad(lon)),
-	// 		z: rad * Math.cos(degToRad(lat))
-	// 	};
-		var toReturn =  {
-			// x: rad * Math.cos(degToRad(lat))*Math.cos(degToRad(lon)),
-			// y: rad * Math.cos(degToRad(lat))*Math.sin(degToRad(lon)),
-			// z: rad * Math.sin(degToRad(lat))
-			x: rad * Math.sin(degToRad(lat))*Math.cos(degToRad(lon)),
-			y: rad * Math.sin(degToRad(lat))*Math.sin(degToRad(lon)),
-			z: rad * Math.cos(degToRad(lat))
+		return {
+			x: rad * Math.cos(degToRad(lat))*Math.cos(degToRad(lon)),
+			y: rad * Math.cos(degToRad(lat))*Math.sin(degToRad(lon)),
+			z: rad * Math.sin(degToRad(lat))
 		};
-		// if(lat < -10) { debugger; }
-		return toReturn;
 };
 
 
 var Globe = function(){
-	var EARTH_RAD = 15;
+	var EARTH_RAD = 20;
 	var SCALE;
 	var OFFSET = 0.00002
-	var MULTIPLIER = 0.002;//10e-2;
+	var MULTIPLIER = 0.0005;//10e-2;
 
 	var newVals = {};
 	for(var lat in lines){
@@ -82,14 +68,14 @@ var Globe = function(){
 	var container = document.getElementById('container');
 
 	this.camera = new THREE.PerspectiveCamera(angle, aspect, near, far);
-	this.camera.position.set(-80, 0, 0);
+	this.camera.position.set(-80, 0, 30);
 	// this.camera.position.set(0, 0, 50);
 	this.camera.up.set(0,0,1);
 
 	this.scene = new THREE.Scene();
 
 	// var light = new THREE.SpotLight(0xFFFFFF, 1, 0, Math.PI / 2, 1);
-	var light = new THREE.AmbientLight(0xFFFFFF);
+	var light = new THREE.AmbientLight(0x04040c);
 	// light.position.set(4000, 4000, 1500);
 	// light.target.position.set (1000, 3800, 1000);
 
@@ -106,9 +92,13 @@ var Globe = function(){
 	earthMesh.position.set(0, 0, 0);
 	this.scene.add(earthMesh);
 
+	// LINE GROUP
+	this.lineGroup = new THREE.Group();
+
 	// LINE
 	//create a blue LineBasicMaterial
-	var materialLine = new THREE.LineBasicMaterial( { color: 0x7722ff } );
+	// var materialLine = new THREE.LineBasicMaterial( { color: 0x7722ff } );
+	var materialLine = new THREE.LineBasicMaterial( { color: 0x46ae73 } );
 	for(var lat in newVals){
 		newVals[lat].forEach((arr) => {
 			var geometryLine = new THREE.Geometry();
@@ -116,9 +106,11 @@ var Globe = function(){
 				geometryLine.vertices.push(new THREE.Vector3( p.x, p.y, p.z) );
 			});
 			var line = new THREE.Line( geometryLine, materialLine );
-			this.scene.add( line );
+			// this.scene.add( line );
+			this.lineGroup.add(line);
 		});
 	}
+	this.scene.add(this.lineGroup);
 	// END LINE
 
 	// var curve = new THREE.CatmullRomCurve3( [
@@ -148,15 +140,33 @@ var Globe = function(){
 	this.renderer = new THREE.WebGLRenderer({antialiasing : true});
 	this.renderer.setSize(WIDTH, HEIGHT);
 	this.renderer.domElement.style.position = 'relative';
+	this.renderer.setClearColor (0x000000, 1);
+
 
 	container.appendChild(this.renderer.domElement);
-	this.renderer.autoClear = false;
+	// this.renderer.autoClear = false;
 	// this.renderer.shadowMap.enabled;// = true;
 };
 
 Globe.prototype.render = function() {
 	 this.renderer.render(this.scene, this.camera);
 };
+
+
+Globe.prototype.rotate = function(){
+	this.lineGroup.rotateZ(0.008);
+	// console.log("ROTATION");
+	this.renderer.render(this.scene, this.camera);
+};
+
+Globe.prototype.animate = function(){
+	// requestAnimationFrame(this.rotate.bind(this));
+	// console.log("animate called");
+	// // this.renderer.render();
+	// this.animate();
+	setInterval(() => this.rotate(), 60);
+};
+
 
 
 export default Globe;
