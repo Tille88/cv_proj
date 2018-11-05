@@ -1,9 +1,9 @@
 // TODO:
-// On interval, pan to different part LAT LONG
-// Incoming data format (more dense data), depending on where on globe... around equator needs to be denser
-// refactor, scene as top GlobeScene, contains lights + renderer... globe comes in as dependency
-// calculate and draw + autopan movement paths
-// Staying years animation
+// - On interval, pan to different part LAT LONG
+// - Incoming data format (more dense data), depending on where on globe... around equator needs to be denser
+// - calculate and draw + autopan movement paths
+// - refactor, scene as top GlobeScene, contains lights + renderer... globe comes in as dependency
+// - Staying years animation
 
 
 // import * as THREE from 'three';
@@ -44,7 +44,6 @@ var Globe = function(){
 	this.renderer = initRenderer();
 	var container = document.getElementById('container');
 	container.appendChild(this.renderer.domElement);
-	this.animate();
 
 	this.controls = new THREE.OrbitControls( this.camera );
 	this.controls.update();
@@ -140,12 +139,12 @@ Globe.prototype.render = function() {
 
 Globe.prototype.rotate = function(){
 	this.lineGroup.rotateZ(0.004);
-	this.renderer.render(this.scene, this.camera);
 };
 
 Globe.prototype.animate = function animate(){
 	this.rotate();
 	requestAnimationFrame(animate.bind(this));
+	this.renderer.render(this.scene, this.camera);
 };
 
 export default Globe;
