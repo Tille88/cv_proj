@@ -1,5 +1,5 @@
 // TODO:
-// Test other linetypes
+// Smaller globe in globe la...
 // Incoming data format (more dense data), depending on where on globe... around equator needs to be denser
 // refactor, scene as top GlobeScene, contains lights + renderer... globe comes in as dependency
 // On interval, pan to different part
@@ -115,33 +115,19 @@ var prepareLineData = function() {
 var initLineGroup = function(){
 	var lineGroup = new THREE.Group();
 
-	var materialLine = new THREE.LineBasicMaterial( { color: 0x46ae73 } );
+	var materialLine = new THREE.LineBasicMaterial({color: 0x46ae73});
 	for(var lat in this.lineData){
 		this.lineData[lat].forEach((arr) => {
-			var geometryLine = new THREE.Geometry();
-			arr.forEach(p =>{
-				geometryLine.vertices.push(new THREE.Vector3( p.x, p.y, p.z) );
-			});
-			var line = new THREE.Line( geometryLine, materialLine );
-			lineGroup.add(line);
+			var vectorArr = arr.map(p => new THREE.Vector3( p.x, p.y, p.z ));
+			if(vectorArr.length <= 1) { return; }
+			var curve = new THREE.CatmullRomCurve3(vectorArr);
+			var points = curve.getPoints( 50 );
+			var geometry = new THREE.BufferGeometry().setFromPoints( points );
+			var curveObject = new THREE.Line( geometry, materialLine );
+			lineGroup.add(curveObject);
 		});
 	}
 	return lineGroup;
-	// var curve = new THREE.CatmullRomCurve3( [
-	// 	new THREE.Vector3( -10, 0, 10 ),
-	// 	new THREE.Vector3( -5, 5, 5 ),
-	// 	new THREE.Vector3( 0, 0, 0 ),
-	// 	new THREE.Vector3( 5, -5, 5 ),
-	// 	new THREE.Vector3( 10, 0, 10 )
-	// ] );
-
-	// var points = curve.getPoints( 50 );
-	// var geometry = new THREE.BufferGeometry().setFromPoints( points );
-
-	// var material = new THREE.LineBasicMaterial( { color : 0xff0000 } );
-
-	// // Create the final object to add to the scene
-	// var curveObject = new THREE.Line( geometry, material );
 };
 
 Globe.prototype.render = function() {
