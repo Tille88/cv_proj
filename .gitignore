@@ -1,3 +1,4 @@
 globe/node_modules
 .Rhistory
 globe/.cache
+globe/dist
