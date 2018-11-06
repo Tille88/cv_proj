@@ -14,7 +14,7 @@ var CONFIG = {
 		FOV: 45,
 		ASPECT: WIDTH / HEIGHT,
 		NEAR: 0.1,
-		FAR: 100,
+		FAR: 200,
 	}
 };
 
