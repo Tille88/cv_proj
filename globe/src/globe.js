@@ -1,8 +1,8 @@
 // TODO:
-// - PUSH; Incoming data format (more dense data), depending on where on globe... around equator needs to be denser, go down to 0 alt if around altitude
-// - animate movement paths + color by year scale
 // - Try alterantive meshes for paths... not only lines of thickness == 1
+// - animate movement paths + color by year scale + legend
 // - refactor, scene as top GlobeScene, contains lights + renderer... globe comes in as dependency, not depend on window width... animationhandle should be possible to cancel at any time based on event, easing function...
+// Documentation
 
 // WILL BE IN CALLING CODE (lat/lons + ordering)
 var LAT_LONS = {
@@ -31,7 +31,14 @@ import THREE from '../lib/THREE';
 import { TweenLite } from 'gsap/TweenLite';
 import {default as C} from './config';
 import Camera from './camera';
-import lines from '../data/no_kernel_full_2';
+// import lines from '../data/no_kernel_full_2';
+// import lines from '../data/test_with_clean_data_1of8_sampl';
+import lines from '../data/test_with_clean_data_1of5_sampl';
+// import lines from '../data/test_with_clean_data_1of5_sampl_min_5_per_line';
+// import lines from '../data/test_with_clean_data_1of5_sampl_min_3_per_line';
+// import lines from '../data/LOW_FREQ_test_with_clean_data_1of5_sampl';
+// import lines from '../data/HIGH_FREQ_test_with_clean_data_1of5_sampl';
+// import lines from '../data/test_with_clean_data_1of3_sampl';
 
 
 //////////////////////////////////////////////
@@ -120,21 +127,12 @@ var prepareLineData = function() {
 	var newVals = {};
 	for(var lat in lines){
 		newVals[lat] = [];
-		var skippedLast;
-		lines[lat].forEach((el, i, arr) => {
-			if(el === -500) {
-				skippedLast = true;
-				return;
-			}
-			var inCoords = latLonToSphere(lat, 360/arr.length*i - 180, C.globe.EARTH_RAD + el*C.globe.MULTIPLIER );
-			var valToPush = (!newVals[lat].length || skippedLast) ? [inCoords] : inCoords;
-			if(!newVals[lat].length || skippedLast){
-				newVals[lat].push(valToPush);
-			} else{
-				newVals[lat][Math.max(0, newVals[lat].length-1)].push(valToPush);
-			}
-			skippedLast = false;
-		});
+		lines[lat].forEach((arr) => {
+					var TBR = arr.map((coordObj) => {
+						return latLonToSphere(lat, coordObj.l, C.globe.EARTH_RAD + coordObj.a*C.globe.MULTIPLIER );
+					});
+					newVals[lat].push(TBR);
+				});
 	};
 	return newVals;
 };
@@ -150,7 +148,7 @@ var initLineGroup = function(){
 			var vectorArr = arr.map(p => new THREE.Vector3( p.x, p.y, p.z ));
 			if(vectorArr.length <= 1) { return; }
 			var curve = new THREE.CatmullRomCurve3(vectorArr);
-			var points = curve.getPoints( 50 );
+			var points = curve.getPoints( vectorArr.length*4 );
 			var geometry = new THREE.BufferGeometry().setFromPoints( points );
 			var curveObject = new THREE.Line( geometry, materialLine );
 			lineGroup.add(curveObject);
