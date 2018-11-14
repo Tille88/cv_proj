@@ -1,6 +1,5 @@
 // TODO:
-// - Try alterantive meshes for paths... not only lines of thickness == 1
-// - refactor, scene as top GlobeScene, contains lights + renderer... globe comes in as dependency, not depend on window width... animationhandle should be possible to cancel at any time based on event, easing function...
+// refactor, scene as top GlobeScene, contains lights + renderer... globe comes in as dependency, not depend on window width... animationhandle should be possible to cancel at any time based on event, easing function...
 // Should be able to fast forward to last anim only.
 // Documentation
 
