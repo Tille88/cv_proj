@@ -9,7 +9,8 @@ var Camera = function(){
 		C.camera.NEAR,
 		C.camera.FAR);
 
-	camera.position.set(-80, 0, 30);
+	var pos = C.camera.INIT_POS;
+	camera.position.set(pos.x, pos.y, pos.z);
 	camera.up.set(0,0,1);
 	camera.lookAt( 0,0,0 );
 	return camera;

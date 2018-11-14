@@ -1,7 +1,7 @@
 // TODO:
 // - Try alterantive meshes for paths... not only lines of thickness == 1
-// - animate movement paths + color by year scale + legend
 // - refactor, scene as top GlobeScene, contains lights + renderer... globe comes in as dependency, not depend on window width... animationhandle should be possible to cancel at any time based on event, easing function...
+// Should be able to fast forward to last anim only.
 // Documentation
 
 // WILL BE IN CALLING CODE (lat/lons + ordering)
@@ -28,32 +28,33 @@ var citiesOrder = ["ST", "KL", "ST", "TP", "ST", "SH", "ST", "MB", "LDN", "ST", 
 
 // import * as THREE from 'three';
 import THREE from '../lib/THREE';
-import { TweenLite } from 'gsap/TweenLite';
 import {default as C} from './config';
 import Camera from './camera';
-// import lines from '../data/no_kernel_full_2';
-// import lines from '../data/test_with_clean_data_1of8_sampl';
 import lines from '../data/test_with_clean_data_1of5_sampl';
-// import lines from '../data/test_with_clean_data_1of5_sampl_min_5_per_line';
-// import lines from '../data/test_with_clean_data_1of5_sampl_min_3_per_line';
 // import lines from '../data/LOW_FREQ_test_with_clean_data_1of5_sampl';
 // import lines from '../data/HIGH_FREQ_test_with_clean_data_1of5_sampl';
-// import lines from '../data/test_with_clean_data_1of3_sampl';
-
 
 //////////////////////////////////////////////
 // Helper functions
-var degToRad = function(deg){
+var radians = function(deg){
 	return deg * Math.PI * 2 / 360;
 };
 
 // https://en.wikipedia.org/wiki/Spherical_coordinate_system
 var latLonToSphere = function(lat, lon, rad){
 		return {
-			x: rad * Math.cos(degToRad(lat))*Math.cos(degToRad(lon)),
-			y: rad * Math.cos(degToRad(lat))*Math.sin(degToRad(lon)),
-			z: rad * Math.sin(degToRad(lat))
+			x: rad * Math.cos(radians(lat))*Math.cos(radians(lon)),
+			y: rad * Math.cos(radians(lat))*Math.sin(radians(lon)),
+			z: rad * Math.sin(radians(lat))
 		};
+};
+
+// https://en.wikipedia.org/wiki/Great-circle_distance
+// input in radians, will not be needed for high precision, so haversine not required
+var arcLen = function(lat1, lon1, lat2, lon2, radius){
+	var m = Math;
+	var centralAng = m.acos(m.sin(lat1)*m.sin(lat2) + m.cos(lat1)*m.cos(lat2)*m.cos(m.abs(lon1-lon2)));
+	return radius * centralAng;
 };
 
 
@@ -231,10 +232,11 @@ var genPanToLatLon = function(lat, lon){
 // "FLIGHT PATH" BELOW
 var genTravelPathAnim = function(fromLat, fromLon, toLat, toLon){
 	var start = latLonToSphere(fromLat, fromLon, C.globe.EARTH_RAD);
+	var middlePointHeight = arcLen(radians(fromLat), radians(fromLon), radians(toLat), radians(toLon), C.globe.EARTH_RAD);
 	var middle = latLonToSphere(
 		lerp(fromLat, toLat, 0.5),
 		lerp(fromLon, toLon, 0.5),
-		C.globe.EARTH_RAD+10 + Math.random()
+		C.globe.EARTH_RAD + middlePointHeight * C.path.ALT_MULT + Math.random()
 	);
 	var end = latLonToSphere(toLat, toLon, C.globe.EARTH_RAD);
 	var offset = Math.random();
@@ -266,7 +268,7 @@ var genAnimPath = function(geometry, pointsNo, durationEnd){
 		var animDur = ts - start;
 		var pointsToShow = Math.floor(lerp(0, pointsNo, animDur/durationEnd));
 		if(pointsToShow > pointsNo){
-			pointsToShow = pointsNo;
+			pointsToShow = pointsNo + 1;
 			cancelAnim = true;
 		}
 		geometry.setDrawRange(0, pointsToShow);
