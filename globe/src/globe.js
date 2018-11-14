@@ -77,6 +77,8 @@ var Globe = function(){
 	this.renderer = initRenderer();
 	var container = document.getElementById('container');
 	container.appendChild(this.renderer.domElement);
+	// Should go to SCENE... i.e. top-level
+	this.frame = container.querySelector('canvas');
 
 	this.controls = new THREE.OrbitControls( this.camera );
 	// this.controls.autoRotate = true;
@@ -208,7 +210,7 @@ var genPanToLatLon = function(lat, lon){
 			endPos = latLonToSphere(
 				lat,
 				lon,
-				C.globe.EARTH_RAD + 50
+				C.globe.EARTH_RAD + 3
 			);
 		}
 		var timeStepNorm = (ts - startTime) / 5000 > 1 ? 1 : (ts - startTime) / 5000;
@@ -231,11 +233,12 @@ var genPanToLatLon = function(lat, lon){
 // "FLIGHT PATH" BELOW
 var genTravelPathAnim = function(fromLat, fromLon, toLat, toLon){
 	var start = latLonToSphere(fromLat, fromLon, C.globe.EARTH_RAD);
+	// TODO: BUG?!
 	var middlePointHeight = arcLen(radians(fromLat), radians(fromLon), radians(toLat), radians(toLon), C.globe.EARTH_RAD);
 	var middle = latLonToSphere(
 		lerp(fromLat, toLat, 0.5),
 		lerp(fromLon, toLon, 0.5),
-		C.globe.EARTH_RAD + middlePointHeight * C.path.ALT_MULT + Math.random()
+		C.globe.EARTH_RAD + middlePointHeight * C.path.ALT_MULT + Math.random()*0.1
 	);
 	var end = latLonToSphere(toLat, toLon, C.globe.EARTH_RAD);
 	var offset = Math.random();

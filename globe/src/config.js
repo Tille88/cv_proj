@@ -1,11 +1,13 @@
 var WIDTH = window.innerWidth - 30;
 var HEIGHT = window.innerHeight - 30;
+// var WIDTH = test.innerWidth;
+// var HEIGHT = test.innerHeight;
 
 var CONFIG = {
 	DEBUG: false,
 	globe: {
-		EARTH_RAD: 20,
-		MULTIPLIER: 0.0005,
+		EARTH_RAD: 1,
+		MULTIPLIER: 1E-5,
 		WIDTH,
 		HEIGHT,
 	},
@@ -15,13 +17,13 @@ var CONFIG = {
 		NEAR: 0.1,
 		FAR: 200,
 		INIT_POS: {
-			x: 33,
-			y: 11,
-			z: 60
+			x: 2,
+			y: 0.6,
+			z: 4
 		}
 	},
 	path: {
-		ALT_MULT: 3E-1,
+		ALT_MULT: 1E-3,
 	}
 };
 
