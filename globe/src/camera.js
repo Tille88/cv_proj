@@ -2,10 +2,10 @@
 import THREE from '../lib/THREE';
 import {default as C} from './config';
 
-var Camera = function(){
+var Camera = function(aspect){
 	var camera = new THREE.PerspectiveCamera(
 		C.camera.FOV,
-		C.camera.ASPECT,
+		aspect,
 		C.camera.NEAR,
 		C.camera.FAR);
 

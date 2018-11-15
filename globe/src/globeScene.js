@@ -1,5 +1,8 @@
 // TODO:
-// not depend on window width... animationhandle should be possible to cancel at any time based on event, easing function...
+// Camera should deal with panning
+// Refactor out animations - movementPath class
+// Have scene call the above two
+// animationhandle should be possible to cancel at any time based on event, easing function...
 // Should be able to fast forward to last anim only.
 // Documentation
 
@@ -36,14 +39,12 @@ import Globe from './globe';
 // GlobeScene class
 var GlobeScene = function(){
 
-	this.camera = new Camera();
 	this.scene = initScene();
 	this.initGlobe();
-	this.renderer = initRenderer();
-	var container = document.getElementById('container');
-	container.appendChild(this.renderer.domElement);
-	// Should go to SCENE... i.e. top-level
-	this.frame = container.querySelector('canvas');
+	this.frame = document.getElementById('globe-scene-container');
+	this.camera = new Camera(this.frame.clientWidth/this.frame.clientHeight);
+	this.renderer = initRenderer.call(this);
+	this.frame.appendChild(this.renderer.domElement);
 
 	this.controls = new THREE.OrbitControls( this.camera );
 	// this.controls.autoRotate = true;
@@ -79,7 +80,7 @@ var initScene = function() {
 // Static private
 var initRenderer = function(){
 	var renderer = new THREE.WebGLRenderer({antialiasing : true});
-	renderer.setSize(C.globe.WIDTH, C.globe.HEIGHT);
+	renderer.setSize(this.frame.clientWidth, this.frame.clientHeight);
 	renderer.domElement.style.position = 'relative';
 	renderer.setClearColor (0x000000, 1);
 	return renderer;
@@ -114,7 +115,41 @@ GlobeScene.prototype.animate = function animate(ts){
  this.controls.update();
  requestAnimationFrame(animate.bind(this));
  this.renderer.render(this.scene, this.camera);
+	// FOR NOW will be in render function, not animate...:
+	// AND want it throttled with kept values to check against (only if clientWidth/Height changed...)
+	var aspect = this.frame.clientWidth/this.frame.clientHeight;
+	if(this.camera.aspect !== aspect){
+		this.camera.aspect = this.frame.clientWidth/this.frame.clientHeight;
+		this.camera.updateProjectionMatrix();
+	}
+	this.renderer.setSize(this.frame.clientWidth, this.frame.clientHeight);
 };
+
+// Throttle...
+// var throttle = function(fn, interv){
+// 	console.log("called throttle");
+// 	var calledTs = -1;
+// 	return function(){
+// 		console.log("called throttled func");
+// 		var newTs = Date.now();
+// 		if(newTs - calledTs  > interv){
+// 			calledTs = newTs;
+// 			return fn.apply(this, arguments);
+// 		}
+// 	};
+// };
+// TBR
+// var throttledFunc = throttle(()=> console.log("DONE"), 1000);
+// setInterval(throttledFunc, 100);
+
+// var resize = function(){
+// };
+
+// var updateAspect = function(){
+// };
+
+// var updateRenderSize = function(){
+// };
 
 //////////////////////////////////////////
 // PANNING OF CAMERA LOGIC BELOW
