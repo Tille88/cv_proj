@@ -186,7 +186,7 @@ Globe.prototype.animate = function animate(ts){
 			cityIdx++;
 			cityIdx = citiesOrder[cityIdx] ? cityIdx : 0;
 			genPanToLatLon.call(this, LAT_LONS[city].lat, LAT_LONS[city].lon)();
-		}, 7000);
+		}, 4000);
 		once = true;
 	}
 	this.controls.update();
@@ -213,7 +213,7 @@ var genPanToLatLon = function(lat, lon){
 				C.globe.EARTH_RAD + 3
 			);
 		}
-		var timeStepNorm = (ts - startTime) / 5000 > 1 ? 1 : (ts - startTime) / 5000;
+		var timeStepNorm = (ts - startTime) / 2000 > 1 ? 1 : (ts - startTime) / 2000;
 		if(ts){
 			self.controls.enabled = false;
 			var x = lerp(startPos.x, endPos.x, timeStepNorm);
@@ -238,10 +238,10 @@ var genTravelPathAnim = function(fromLat, fromLon, toLat, toLon){
 	var middle = latLonToSphere(
 		lerp(fromLat, toLat, 0.5),
 		lerp(fromLon, toLon, 0.5),
-		C.globe.EARTH_RAD + middlePointHeight * C.path.ALT_MULT + Math.random()*0.1
+		C.globe.EARTH_RAD + middlePointHeight * C.path.ALT_MULT
 	);
 	var end = latLonToSphere(toLat, toLon, C.globe.EARTH_RAD);
-	var offset = Math.random();
+	var offset = Math.random() * C.path.OFFS_MULT;
 	var curve = new THREE.QuadraticBezierCurve3(
 		new THREE.Vector3( start.x, start.y, start.z ),
 		new THREE.Vector3( middle.x + offset, middle.y + offset, middle.z + offset ),
@@ -251,7 +251,7 @@ var genTravelPathAnim = function(fromLat, fromLon, toLat, toLon){
 	var points = curve.getPoints( noPoints );
 	var geometry = new THREE.BufferGeometry().setFromPoints( points );
 	geometry.setDrawRange(0, 0);
-	genAnimPath(geometry, noPoints, 1000);
+	genAnimPath(geometry, noPoints, 500);
 
 
 	var material = new THREE.LineBasicMaterial( { color : 0xff0000 } );

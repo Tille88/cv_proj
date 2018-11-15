@@ -23,7 +23,8 @@ var CONFIG = {
 		}
 	},
 	path: {
-		ALT_MULT: 1E-3,
+		ALT_MULT: 5E-1,
+		OFFS_MULT: 1E-1
 	}
 };
 
