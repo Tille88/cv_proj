@@ -1,10 +1,8 @@
 // TODO:
-// 0) Push changes, keep new branch
-// 1) Clean up reverse function in locationPathGenerator
-// 2) Make sure can be able to fast forward to last animation only OR can make things run through an array!
-// 3) Should be able to fast forward to last anim only. OR fast forward SEVERAL steps
-// 4) Refactor out animations - movementPath class
-// 5) Documentation + cleanup (magic numbers... colours, etc.)
+// 1) DEBUG REVERSE INDEXING RESULTS => get rewind animation working
+// 2) Cancel rewind animations? Need to remove each of the lines as well as jump to location
+// 3) Refactor out animations - movementPath class
+// 4) Documentation + cleanup (magic numbers... colours, etc.)
 
 // 6) Make sure render only called more rarely if no animations, throttle and break out rescaling functions.
 // 7) Want fewer lines if lower resolution, will look impossibly dense if not... subsample the linesgroup, or hide
@@ -75,8 +73,14 @@ GlobeScene.prototype.render = function render(ts) {
 	if(this.pathAnimFuncs){
 		var allDone = true;
 		for(var funcKey in this.pathAnimFuncs.fn){
+// if(funcKey === "panDesc"){ debugger; }
 			var timeStepNorm = this.pathAnimFuncs.timeStepNorm(ts);
-			var animNotDone = this.pathAnimFuncs.fn[funcKey](timeStepNorm);
+			var funcArr = this.pathAnimFuncs.fn[funcKey];
+			// REPLACE WITH CLAMP
+			var funcIdx = Math.min(Math.floor(timeStepNorm*funcArr.length), funcArr.length-1);
+			// var animNotDone = funcArr[funcIdx](timeStepNorm);
+			// NEED TO REMAP IT SO EACH ONE GOES IN [0,1]-range
+			var animNotDone = funcArr[funcIdx]((funcArr.length*timeStepNorm - funcIdx));
 			if(animNotDone) { allDone = false; }
 		}
 		if(allDone) { this.pathAnimFuncs = null; }
@@ -87,18 +91,25 @@ GlobeScene.prototype.render = function render(ts) {
 };
 
 GlobeScene.prototype.startPathAnim = function(locArr, opts){
-	var defaults = { dur: 1000, forward: true};
+	var defaults = { dur: 3000, forward: true};
 	opts = Object.assign({}, defaults, opts);
+	// debugger;
 	var startTime;
 	this.pathAnimFuncs = {
 		fn: {}
 	};
 	if(opts.forward){
-		this.pathAnimFuncs.fn.pan =  this.camera.genPanToLatLon(locArr[1].lat, locArr[1].lon);
-		this.pathAnimFuncs.fn.path =  this.pathContainer.lineAnimationGen(locArr[0].lat, locArr[0].lon, locArr[1].lat, locArr[1].lon);
+		this.pathAnimFuncs.fn.pan =  [this.camera.genPanToLatLon(locArr[locArr.length-1][1].lat, locArr[locArr.length-1][1].lon)];
+		this.pathAnimFuncs.fn.path = locArr.map((el)=>{
+			return this.pathContainer.genLineAnimation(el[0].lat, el[0].lon, el[1].lat, el[1].lon);
+		});
 	} else{
-		this.pathAnimFuncs.fn.pan =  this.camera.genPanToLatLon(locArr[0].lat, locArr[0].lon);
-		this.pathAnimFuncs.fn.path =  this.pathContainer.lineAnimationGen();
+		this.pathAnimFuncs.fn.panDesc =  [this.camera.genPanToLatLon(locArr[locArr.length-1][0].lat, locArr[locArr.length-1][0].lon)];
+		console.log(locArr[locArr.length-1][0].lat);
+		// this.pathAnimFuncs.fn.path =  this.pathContainer.genLineAnimation();
+		// this.pathAnimFuncs.fn.pathDesc = locArr.map((el)=>{
+		// 	return this.pathContainer.genLineAnimation();
+		// });
 	}
 	this.pathAnimFuncs.timeStepNorm = function(ts){
 		if(!startTime) { startTime = ts; return 0; }
@@ -107,11 +118,15 @@ GlobeScene.prototype.startPathAnim = function(locArr, opts){
  };
 
 //  CALL WITH LAST VALUE OR FAST FORWARD? DONT WANT THEM TO END UP OUT OF SYNC...
-//  GlobeScene.prototype.cancelPathAnim = function(){
-// 	// cancelAnimationFrame(this.pathAnimHandle);
-// 	// REMOVE FUNCTION POINTERS
-// 	this.pathAnimFuncs = null;
-//  }
+ GlobeScene.prototype.cancelPathAnim = function(){
+	// FAST FORWARD
+	if(!this.pathAnimFuncs) { return false; }
+	for(var funcKey in this.pathAnimFuncs.fn){
+		var funcArr = this.pathAnimFuncs.fn[funcKey];
+		funcArr.forEach(fn => fn(1));
+	}
+	this.pathAnimFuncs = null;
+ }
 
 
 export default GlobeScene;

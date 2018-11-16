@@ -31,24 +31,25 @@ var genTravelPath = function(fromLat, fromLon, toLat, toLon){
 	var curveObject = new THREE.Line( geometry, material );
 	this.lines.push(curveObject);
 	this.target.add(curveObject);
+	return curveObject;
  };
 
 
-//  TODO: CLEAN UP
- PathContainer.prototype.lineAnimationGen = function(fromLat, fromLon, toLat, toLon){
+ PathContainer.prototype.genLineAnimation = function(fromLat, fromLon, toLat, toLon){
 	 var lastNoPoints;
 	 var self = this;
 	 if(fromLat){
-		genTravelPath.call(this, fromLat, fromLon, toLat, toLon);
+		var line = genTravelPath.call(this, fromLat, fromLon, toLat, toLon);
 		return function lineAnimation(timeStepNorm){
 			if(timeStepNorm > 1 && lastNoPoints > NO_POINTS + 1){ return false; }
-			var line = self.lines[self.lines.length-1];
+			// var line = self.lines[self.lines.length-1];
 			var pointsToShow = lastNoPoints = Math.floor(lerp(0, NO_POINTS + 1, timeStepNorm));
+	// console.log("SHOWING POINTS: ", pointsToShow);
 			line.geometry.setDrawRange(0, pointsToShow);
 			return true;
 		};
 	 } else{
-		//  This is for reverse... want cleaner way
+		//  This is for reverse animations
 		return function lineAnimation(timeStepNorm){
 			if(timeStepNorm > 1 && lastNoPoints <= 0){
 				self.target.remove(self.lines.pop());
@@ -58,7 +59,7 @@ var genTravelPath = function(fromLat, fromLon, toLat, toLon){
 			var pointsToShow = lastNoPoints = Math.floor(lerp(NO_POINTS + 1, 0, timeStepNorm));
 			line.geometry.setDrawRange(0, pointsToShow);
 			return true;
-		}
+		};
 	 }
  };
 //  BACKUP

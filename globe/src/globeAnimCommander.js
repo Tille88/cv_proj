@@ -21,31 +21,63 @@ var LAT_LONS = {
 };
 
 var citiesOrder = ["ST", "KL", "ST", "TP", "ST", "SH", "ST", "MB", "LDN", "ST", "BJ", "SH", "PR", "SH"];
+// var citiesOrder = ["ST", "KL", "ST", "TP"];
 
-
+var TBR = 2000;
 
 var GlobeAnimCommander = function(){
+	this.cityIdx = 0;
 	this.globeScene = new GlobeScene();
-	this.history = [];
 	this.globeScene.render();
-	setTimeout(() => {
-		this.globeScene.startPathAnim([LAT_LONS[citiesOrder[0]], LAT_LONS[citiesOrder[1]]]);
-	}, 2000);
-	setTimeout(() => {
-		this.globeScene.startPathAnim([LAT_LONS[citiesOrder[1]], LAT_LONS[citiesOrder[2]]]);
-	}, 5000);
-	setTimeout(() => {
-		this.globeScene.startPathAnim([LAT_LONS[citiesOrder[1]], LAT_LONS[citiesOrder[2]]], {forward: false});
-	}, 8000);
-	setTimeout(() => {
-		this.globeScene.startPathAnim([LAT_LONS[citiesOrder[0]], LAT_LONS[citiesOrder[1]]], {forward: false});
-	}, 11000);
+	var TBR=this.genLatLonArr(3);
+	console.log(TBR);
+	this.globeScene.startPathAnim(
+		TBR
+	);
+
+	// this.globeScene.startPathAnim(
+	// 	this.genLatLonArr(3)
+	// );
+
+	setTimeout(()=> {
+		var TBR = this.genLatLonArr(0);
+		console.log(TBR);
+		this.globeScene.startPathAnim(TBR, {forward: false});
+	}, 6000)
+	// setTimeout(()=> { this.globeScene.cancelPathAnim() }, 1000)
+
+
+	// var intervalHanlde = setInterval(() => {
+	// 	this.globeScene.startPathAnim([LAT_LONS[citiesOrder[this.cityIdx]], LAT_LONS[citiesOrder[this.cityIdx+1]]]);
+	// 	this.cityIdx++;
+	// 	if(this.cityIdx===citiesOrder.length-1){
+	// 		clearInterval(intervalHanlde);
+	// 	}
+	// }, TBR);
+	// var intervalHanlde2 = setInterval(() => {
+	// 	this.globeScene.startPathAnim([LAT_LONS[citiesOrder[this.cityIdx-1]], LAT_LONS[citiesOrder[this.cityIdx]]], {forward: false});
+	// 	this.cityIdx--;
+	// }, TBR * citiesOrder.length);
+	// setTimeout(() => {
+	// 	this.globeScene.startPathAnim([LAT_LONS[citiesOrder[1]], LAT_LONS[citiesOrder[2]]]);
+	// }, 5000);
+	// setTimeout(() => {
+	// 	this.globeScene.startPathAnim([LAT_LONS[citiesOrder[1]], LAT_LONS[citiesOrder[2]]], {forward: false});
+	// }, 8000);
+	// setTimeout(() => {
+	// 	this.globeScene.startPathAnim([LAT_LONS[citiesOrder[0]], LAT_LONS[citiesOrder[1]]], {forward: false});
+	// }, 11000);
 };
 
-// Execute
-// May want exactly same API to make sure rewinding could work...
-
-// FAST FORWARD
-// REWIND
+GlobeAnimCommander.prototype.genLatLonArr = function(toIdx){
+	var res = [];
+	var idxBump = toIdx > this.cityIdx ? 1 : -1;
+	for(var cityIdx = this.cityIdx; cityIdx !== toIdx; cityIdx+=idxBump){
+		console.log(cityIdx);
+		res.push([LAT_LONS[citiesOrder[cityIdx]], LAT_LONS[citiesOrder[cityIdx+1]]]);
+	}
+	this.cityIdx = toIdx;
+	return res;
+};
 
 export default GlobeAnimCommander;
