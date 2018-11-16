@@ -4,51 +4,32 @@
 // Have scene call the above two
 // animationhandle should be possible to cancel at any time based on event, easing function...
 // Should be able to fast forward to last anim only.
+// CALL API FROM INDEX
 // Documentation
 
-// WILL BE IN CALLING CODE (lat/lons + ordering)
-var LAT_LONS = {
-	// Stockholm
-	ST: {lat: 59.3, lon: 18.0},
-	// Kuala Lumpur
-	KL: {lat: 3.1, lon: 101.6},
-	// Taipei
-	TP: {lat: 25.1, lon: 121.5},
-	// Shanghai
-	SH: {lat: 31.2, lon: 121.4},
-	// Mumbai
-	MB: {lat: 19.0, lon: 72.8},
-	// London
-	LDN: {lat: 51.5, lon: -0.1},
-	// Beijing
-	BJ: {lat: 39.9, lon: 116.3},
-	// Phan Rang
-	PR: {lat: 11.5, lon: 108.9},
-};
-
-var citiesOrder = ["ST", "KL", "ST", "TP", "ST", "SH", "ST", "MB", "LDN", "ST", "BJ", "SH", "PR", "SH"];
 
 import THREE from '../lib/THREE';
 import {default as C} from './config';
 import Camera from './camera';
-import genTravelPathAnim from './locationPathGenerator';
+// import genTravelPathAnim from './locationPathGenerator';
+import PathContainer from './locationPathGenerator';
 import Globe from './globe';
 
 
 //////////////////////////////////////////////
 // GlobeScene class
 var GlobeScene = function(){
-
 	this.scene = initScene();
 	this.initGlobe();
 	this.frame = document.getElementById('globe-scene-container');
 	this.camera = new Camera(this.frame.clientWidth/this.frame.clientHeight);
+	this.pathContainer = new PathContainer(this.scene);
 	this.renderer = initRenderer.call(this);
 	this.frame.appendChild(this.renderer.domElement);
 
 	this.controls = new THREE.OrbitControls( this.camera );
 	// this.controls.autoRotate = true;
-	this.controls.enabled = false;
+	// this.controls.enabled = false;
 	this.controls.update();
 
 	if(C.DEBUG){
@@ -65,9 +46,6 @@ GlobeScene.prototype.initGlobe = function() {
 };
 
 
-GlobeScene.prototype.render = function() {
-	this.renderer.render(this.scene, this.camera);
-};
 
 // Static private
 var initScene = function() {
@@ -87,44 +65,45 @@ var initRenderer = function(){
 	return renderer;
 };
 
-
-
-var once = false;
-var cityIdx = 0;
-GlobeScene.prototype.animate = function animate(ts){
- if(!once){
-	 setInterval(() => {
-		 var city = citiesOrder[cityIdx];
-		 if(cityIdx !== 0){
-			 var prevCity = citiesOrder[cityIdx-1];
-			 genTravelPathAnim.call(
-				 this,
-				 LAT_LONS[prevCity].lat,
-				 LAT_LONS[prevCity].lon,
-				 LAT_LONS[city].lat,
-				 LAT_LONS[city].lon,
-				 );
-		 }
-
-
-		 cityIdx++;
-		 cityIdx = citiesOrder[cityIdx] ? cityIdx : 0;
-		 this.camera.genPanToLatLon(LAT_LONS[city].lat, LAT_LONS[city].lon)();
-	 }, 4000);
-	 once = true;
- }
- this.controls.update();
- requestAnimationFrame(animate.bind(this));
- this.renderer.render(this.scene, this.camera);
-	// FOR NOW will be in render function, not animate...:
-	// AND want it throttled with kept values to check against (only if clientWidth/Height changed...)
+GlobeScene.prototype.render = function render(ts) {
 	var aspect = this.frame.clientWidth/this.frame.clientHeight;
 	if(this.camera.aspect !== aspect){
 		this.camera.aspect = this.frame.clientWidth/this.frame.clientHeight;
 		this.camera.updateProjectionMatrix();
 	}
 	this.renderer.setSize(this.frame.clientWidth, this.frame.clientHeight);
+	if(this.pathAnimFuncs){
+		var allDone = true;
+		for(var funcKey in this.pathAnimFuncs.fn){
+			var timeStepNorm = this.pathAnimFuncs.timeStepNorm(ts);
+			var animNotDone = this.pathAnimFuncs.fn[funcKey](timeStepNorm);
+			if(animNotDone) { allDone = false; }
+		}
+		if(allDone) { this.pathAnimFuncs = null; }
+	}
+	this.controls.update();
+	this.renderer.render(this.scene, this.camera);
+	this.animationHandle = requestAnimationFrame(render.bind(this));
 };
+
+GlobeScene.prototype.startPathAnim = function(locArr, dur){
+	dur = dur || 1000;
+	var startTime;
+	this.pathAnimFuncs = {
+		fn: {}
+	};
+	this.pathAnimFuncs.fn.pan =  this.camera.genPanToLatLon(locArr[0].lat, locArr[0].lon);
+	this.pathAnimFuncs.timeStepNorm = function(ts){
+		if(!startTime) { startTime = ts; }
+		return (ts - startTime) / dur > 1 ? 1 : (ts - startTime) / dur;
+	};
+ };
+
+//  GlobeScene.prototype.cancelPathAnim = function(){
+// 	// cancelAnimationFrame(this.pathAnimHandle);
+// 	// REMOVE FUNCTION POINTERS
+// 	this.pathAnimHandle = null;
+//  }
 
 
 export default GlobeScene;
