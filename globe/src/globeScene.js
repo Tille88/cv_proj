@@ -1,18 +1,18 @@
 // TODO:
-// Camera should deal with panning
-// Refactor out animations - movementPath class
-// Have scene call the above two
-// animationhandle should be possible to cancel at any time based on event, easing function...
-// Should be able to fast forward to last anim only.
-// CALL API FROM INDEX
-// Documentation
+// 0) Push changes, keep new branch
+// 1) Clean up reverse function in locationPathGenerator
+// 2) Make sure can be able to fast forward to last animation only OR can make things run through an array!
+// 3) Should be able to fast forward to last anim only. OR fast forward SEVERAL steps
+// 4) Refactor out animations - movementPath class
+// 5) Documentation + cleanup (magic numbers... colours, etc.)
 
+// 6) Make sure render only called more rarely if no animations, throttle and break out rescaling functions.
+// 7) Want fewer lines if lower resolution, will look impossibly dense if not... subsample the linesgroup, or hide
 
 import THREE from '../lib/THREE';
 import {default as C} from './config';
 import Camera from './camera';
-// import genTravelPathAnim from './locationPathGenerator';
-import PathContainer from './locationPathGenerator';
+import PathContainer from './pathContainer';
 import Globe from './globe';
 
 
@@ -86,23 +86,31 @@ GlobeScene.prototype.render = function render(ts) {
 	this.animationHandle = requestAnimationFrame(render.bind(this));
 };
 
-GlobeScene.prototype.startPathAnim = function(locArr, dur){
-	dur = dur || 1000;
+GlobeScene.prototype.startPathAnim = function(locArr, opts){
+	var defaults = { dur: 1000, forward: true};
+	opts = Object.assign({}, defaults, opts);
 	var startTime;
 	this.pathAnimFuncs = {
 		fn: {}
 	};
-	this.pathAnimFuncs.fn.pan =  this.camera.genPanToLatLon(locArr[0].lat, locArr[0].lon);
+	if(opts.forward){
+		this.pathAnimFuncs.fn.pan =  this.camera.genPanToLatLon(locArr[1].lat, locArr[1].lon);
+		this.pathAnimFuncs.fn.path =  this.pathContainer.lineAnimationGen(locArr[0].lat, locArr[0].lon, locArr[1].lat, locArr[1].lon);
+	} else{
+		this.pathAnimFuncs.fn.pan =  this.camera.genPanToLatLon(locArr[0].lat, locArr[0].lon);
+		this.pathAnimFuncs.fn.path =  this.pathContainer.lineAnimationGen();
+	}
 	this.pathAnimFuncs.timeStepNorm = function(ts){
-		if(!startTime) { startTime = ts; }
-		return (ts - startTime) / dur > 1 ? 1 : (ts - startTime) / dur;
+		if(!startTime) { startTime = ts; return 0; }
+		return (ts - startTime) / opts.dur;
 	};
  };
 
+//  CALL WITH LAST VALUE OR FAST FORWARD? DONT WANT THEM TO END UP OUT OF SYNC...
 //  GlobeScene.prototype.cancelPathAnim = function(){
 // 	// cancelAnimationFrame(this.pathAnimHandle);
 // 	// REMOVE FUNCTION POINTERS
-// 	this.pathAnimHandle = null;
+// 	this.pathAnimFuncs = null;
 //  }
 
 

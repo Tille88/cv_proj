@@ -29,7 +29,7 @@ var panningDecorator = function(){
 		var self = this;
 		return function panToLatLon(timeStepNorm){
 // console.log(timeStepNorm);
-			if(timeStepNorm >= 1){ return false; }
+			if(timeStepNorm > 1){ return false; }
 			if(startPos === undefined || endPos === undefined) {
 				startPos = Object.assign({}, self.position);
 				endPos = latLonToSphere(

@@ -28,14 +28,22 @@ var GlobeAnimCommander = function(){
 	this.globeScene = new GlobeScene();
 	this.history = [];
 	this.globeScene.render();
-	// this.globeScene.panTo(LAT_LONS.KL.lat, LAT_LONS.KL.lon);
-	// this.globeScene.startPathAnim([{lat: LAT_LONS.KL.lat, lon: LAT_LONS.KL.lon}]);
 	setTimeout(() => {
-		console.log("CALLING ANIM");
-		this.globeScene.startPathAnim([LAT_LONS[citiesOrder[1]]]);
+		this.globeScene.startPathAnim([LAT_LONS[citiesOrder[0]], LAT_LONS[citiesOrder[1]]]);
+	}, 2000);
+	setTimeout(() => {
+		this.globeScene.startPathAnim([LAT_LONS[citiesOrder[1]], LAT_LONS[citiesOrder[2]]]);
 	}, 5000);
+	setTimeout(() => {
+		this.globeScene.startPathAnim([LAT_LONS[citiesOrder[1]], LAT_LONS[citiesOrder[2]]], {forward: false});
+	}, 8000);
+	setTimeout(() => {
+		this.globeScene.startPathAnim([LAT_LONS[citiesOrder[0]], LAT_LONS[citiesOrder[1]]], {forward: false});
+	}, 11000);
 };
 
+// Execute
+// May want exactly same API to make sure rewinding could work...
 
 // FAST FORWARD
 // REWIND
