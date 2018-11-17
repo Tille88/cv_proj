@@ -1,11 +1,10 @@
 // TODO:
-// 1) DEBUG REVERSE INDEXING RESULTS => get rewind animation working
-// 2) Cancel rewind animations? Need to remove each of the lines as well as jump to location
-// 3) Refactor out animations - movementPath class
-// 4) Documentation + cleanup (magic numbers... colours, etc.)
+// 1) Refactor out animations - movementPath class, event all done? GlobeScene shouldnt really know about it's stuff...
+// 2) Documentation + cleanup (magic numbers... colours, etc.)
+// MERGING TIME
 
-// 6) Make sure render only called more rarely if no animations, throttle and break out rescaling functions.
-// 7) Want fewer lines if lower resolution, will look impossibly dense if not... subsample the linesgroup, or hide
+// 3) Make sure render only called more rarely if no animations, throttle and break out rescaling functions.
+// 4) Want fewer lines if lower resolution, will look impossibly dense if not... subsample the linesgroup, or hide
 
 import THREE from '../lib/THREE';
 import {default as C} from './config';
@@ -93,7 +92,6 @@ GlobeScene.prototype.render = function render(ts) {
 GlobeScene.prototype.startPathAnim = function(locArr, opts){
 	var defaults = { dur: 3000, forward: true};
 	opts = Object.assign({}, defaults, opts);
-	// debugger;
 	var startTime;
 	this.pathAnimFuncs = {
 		fn: {}
@@ -101,15 +99,13 @@ GlobeScene.prototype.startPathAnim = function(locArr, opts){
 	if(opts.forward){
 		this.pathAnimFuncs.fn.pan =  [this.camera.genPanToLatLon(locArr[locArr.length-1][1].lat, locArr[locArr.length-1][1].lon)];
 		this.pathAnimFuncs.fn.path = locArr.map((el)=>{
-			return this.pathContainer.genLineAnimation(el[0].lat, el[0].lon, el[1].lat, el[1].lon);
+			return this.pathContainer.genLineAnimation({fromLat: el[0].lat, fromLon: el[0].lon, toLat: el[1].lat, toLon: el[1].lon});
 		});
 	} else{
 		this.pathAnimFuncs.fn.panDesc =  [this.camera.genPanToLatLon(locArr[locArr.length-1][0].lat, locArr[locArr.length-1][0].lon)];
-		console.log(locArr[locArr.length-1][0].lat);
-		// this.pathAnimFuncs.fn.path =  this.pathContainer.genLineAnimation();
-		// this.pathAnimFuncs.fn.pathDesc = locArr.map((el)=>{
-		// 	return this.pathContainer.genLineAnimation();
-		// });
+		this.pathAnimFuncs.fn.pathDesc = locArr.map((el, idx )=>{
+			return this.pathContainer.genLineAnimation({ idx });
+		});
 	}
 	this.pathAnimFuncs.timeStepNorm = function(ts){
 		if(!startTime) { startTime = ts; return 0; }

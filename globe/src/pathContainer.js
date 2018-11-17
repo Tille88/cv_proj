@@ -34,12 +34,13 @@ var genTravelPath = function(fromLat, fromLon, toLat, toLon){
 	return curveObject;
  };
 
+ var REVERSE_CUTOFF = 0.95;
 
- PathContainer.prototype.genLineAnimation = function(fromLat, fromLon, toLat, toLon){
+ PathContainer.prototype.genLineAnimation = function(opts){
 	 var lastNoPoints;
 	 var self = this;
-	 if(fromLat){
-		var line = genTravelPath.call(this, fromLat, fromLon, toLat, toLon);
+	 if(opts.fromLat){
+		var line = genTravelPath.call(this, opts.fromLat, opts.fromLon, opts.toLat, opts.toLon);
 		return function lineAnimation(timeStepNorm){
 			if(timeStepNorm > 1 && lastNoPoints > NO_POINTS + 1){ return false; }
 			// var line = self.lines[self.lines.length-1];
@@ -50,9 +51,14 @@ var genTravelPath = function(fromLat, fromLon, toLat, toLon){
 		};
 	 } else{
 		//  This is for reverse animations
+		var removedLine = false;
+		var initLineArrLen = self.lines.length;
 		return function lineAnimation(timeStepNorm){
-			if(timeStepNorm > 1 && lastNoPoints <= 0){
-				self.target.remove(self.lines.pop());
+			if(removedLine) { return true; }
+			if(timeStepNorm >= REVERSE_CUTOFF){
+				var toRemove = self.lines.splice(initLineArrLen - (opts.idx + 1));
+				self.target.remove(toRemove[0]);
+				removedLine = true;
 				return false;
 			}
 			var line = self.lines[self.lines.length-1];
@@ -62,21 +68,6 @@ var genTravelPath = function(fromLat, fromLon, toLat, toLon){
 		};
 	 }
  };
-//  BACKUP
-//  PathContainer.prototype.lineAnimationGen = function(fromLat, fromLon, toLat, toLon){
-// 		genTravelPath.call(this, fromLat, fromLon, toLat, toLon);
-// 		var lastNoPoints;
-// 		var self = this;
-// 		return function lineAnimation(timeStepNorm){
-// 			if(timeStepNorm > 1 && lastNoPoints > NO_POINTS + 1){ return false; }
-// 			var line = self.lines[self.lines.length-1];
-// 			var pointsToShow = lastNoPoints = Math.floor(lerp(0, NO_POINTS + 1, timeStepNorm));
-// 			line.geometry.setDrawRange(0, pointsToShow);
-// 			return true;
-// 		};
-//  };
-
-
 
 
  export default PathContainer;

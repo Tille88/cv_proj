@@ -25,5 +25,24 @@ var lerp = function(a, b, n) {
   return (1 - n) * a + n * b;
 };
 
+// Stealing the underscore implementation
+var range = function(start, stop, step){
+	if (stop == null) {
+		stop = start || 0;
+		start = 0;
+	}
+	step = step || 1;
 
-export { radians, latLonToSphere, arcLen, lerp };
+	var length = Math.max(Math.ceil((stop - start) / step), 0);
+	var range = Array(length);
+
+	for (var idx = 0; idx < length; idx++, start += step) {
+		range[idx] = start;
+	}
+
+	return range;
+};
+
+
+
+export { radians, latLonToSphere, arcLen, lerp, range };
