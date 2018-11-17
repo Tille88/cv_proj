@@ -1,3 +1,4 @@
+// Config file to hide away some of the many parameters needed to render using Three.js
 var CONFIG = {
 	DEBUG: false,
 	globe: {

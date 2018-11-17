@@ -1,3 +1,4 @@
+// Dependencies
 import THREE from '../lib/THREE';
 import { latLonToSphere } from './globeHelpers';
 import {default as C} from './config';
@@ -5,30 +6,41 @@ import lines from '../data/test_with_clean_data_1of5_sampl';
 
 //////////////////////////////////////////////
 // Globe class
+/**
+ * Globe
+ * Globe mesh containing a linegroup following a
+ * DEM (digital elevation model)
+ */
+
+// Constructor
 var Globe = function(){
 	var lineData = prepareLineData();
 	this.earthMesh = initEarthMesh();
 	this.lineGroup = initLineGroup(lineData);
 };
 
+// Constants
+var WIDTH_SEGS, HEIGHT_SEGS;
+WIDTH_SEGS = HEIGHT_SEGS = 16;
+var GLOBE_OPACITY = 0.7;
+
+
 
 // Static private
 var initEarthMesh = function(){
-	var earthGeo = new THREE.SphereGeometry(C.globe.EARTH_RAD, 16, 16);
-
+	var earthGeo = new THREE.SphereGeometry(C.globe.EARTH_RAD, WIDTH_SEGS, HEIGHT_SEGS);
 	var earthMat = new THREE.MeshPhongMaterial({
 				transparent: true,
-				opacity: 0.7
+				opacity: GLOBE_OPACITY
 			});
-
 	var earthMesh = new THREE.Mesh(earthGeo, earthMat);
 	earthMesh.position.set(0, 0, 0);
-
 	return earthMesh;
 };
 
 
 // Static private
+// Given the data formatting, converting to the globe coordinate system
 var prepareLineData = function() {
 	var newVals = {};
 	for(var lat in lines){
@@ -44,7 +56,7 @@ var prepareLineData = function() {
 };
 
 
-// Instance private
+// Static private
 var initLineGroup = function(lineData){
 	var lineGroup = new THREE.Group();
 
@@ -62,9 +74,5 @@ var initLineGroup = function(lineData){
 	}
 	return lineGroup;
 };
-
-
-
-
 
 export default Globe;

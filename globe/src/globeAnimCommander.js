@@ -1,7 +1,8 @@
+// Dependencies
 import GlobeScene from './globeScene';
 import {range} from './globeHelpers';
 
-// WILL BE IN CALLING CODE (lat/lons + ordering)
+// LOOKUPS (lat/lons + ordering)
 var LAT_LONS = {
 	// Stockholm
 	ST: {lat: 59.3, lon: 18.0},
@@ -20,40 +21,55 @@ var LAT_LONS = {
 	// Phan Rang
 	PR: {lat: 11.5, lon: 108.9},
 };
-
 var citiesOrder = ["ST", "KL", "ST", "TP", "ST", "SH", "ST", "MB", "LDN", "ST", "BJ", "SH", "PR", "SH"];
-// var citiesOrder = ["ST", "KL", "ST", "TP"];
 
-
+/**
+ * GlobeAnimCommander
+ * Works as calling code, for the globe scene, triggering transitions as needed through interface
+ * and keeping state of current index.
+ * Constructor triggers scee and start render loop
+ * @class
+ */
 var GlobeAnimCommander = function(){
 	this.cityIdx = 0;
 	this.globeScene = new GlobeScene();
 	this.globeScene.render();
-	var TBR=this.genLatLonArr(3);
-	this.globeScene.startPathAnim(
-		TBR
-	);
-
-	// setTimeout(()=> { this.globeScene.cancelPathAnim() }, 2000)
-
-	// this.globeScene.startPathAnim(
-	// 	this.genLatLonArr(3)
-	// );
-
-	setTimeout(()=> {
-		var TBR = this.genLatLonArr(0);
-		this.globeScene.startPathAnim(TBR, {forward: false});
-	}, 6000)
-	// setTimeout(()=> { this.globeScene.cancelPathAnim() }, 7000)
+	triggerExample.call(this);
 };
 
-GlobeAnimCommander.prototype.goToCityIdx = function(idx){
-	var latLonArr = this.genLatLonArr(idx);
-	this.globeScene.startPathAnim(latLonArr);
+// Simple example
+// Private instance
+var triggerExample = function(){
+	// this.goToCityIdx(3);
+	setTimeout(()=> { this.goToCityIdx(3); }, 1000);
+	setTimeout(()=> { this.goToCityIdx(0); }, 5000);
+	// setTimeout(()=> { this.goToCityIdx(0); }, 8000);
+	// setTimeout(()=> { this.goToCityIdx(3); }, 2000);
+	// setTimeout(()=> { this.goToCityIdx(6); }, 6000);
+	// setTimeout(()=> { this.goToCityIdx(9); }, 10000);
+	// setTimeout(()=> { this.goToCityIdx(6); }, 14000);
+	// setTimeout(()=> { this.goToCityIdx(3); }, 18000);
+	// setTimeout(()=> { this.goToCityIdx(0); }, 22000);
+};
+
+/**
+ * Starts animation to the index out of listed city indexes in lookup/order array above
+ * @param {number} toIdx
+ * @instance
+ */
+GlobeAnimCommander.prototype.goToCityIdx = function(toIdx){
+	var forward = toIdx > this.cityIdx;
+	var latLonArr = genLatLonArr.call(this, toIdx);
+	this.globeScene.startPathAnim(latLonArr, { forward });
 };
 
 
-GlobeAnimCommander.prototype.genLatLonArr = function(toIdx){
+/**
+ * Generate array as formatted the API requires
+ * @param {number} toIdx
+ * @returns {Array} Resulting array of cities to be put into animation call
+ */
+var genLatLonArr = function(toIdx){
 	var idxArr = toIdx > this.cityIdx ? range(this.cityIdx, toIdx) : range(this.cityIdx, toIdx-1, -1);
 	var res = idxArr.map((cityIdx) => {
 		return [LAT_LONS[citiesOrder[cityIdx]], LAT_LONS[citiesOrder[cityIdx+1]]];
