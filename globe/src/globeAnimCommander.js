@@ -34,6 +34,8 @@ var GlobeAnimCommander = function(){
 		TBR
 	);
 
+	// setTimeout(()=> { this.globeScene.cancelPathAnim() }, 2000)
+
 	// this.globeScene.startPathAnim(
 	// 	this.genLatLonArr(3)
 	// );

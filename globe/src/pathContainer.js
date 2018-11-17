@@ -1,3 +1,4 @@
+// Dependencies
 import { radians, lerp, latLonToSphere, arcLen } from './globeHelpers';
 import {default as C} from './config';
 
@@ -7,7 +8,7 @@ var PathContainer = function(target){
 };
 
 var NO_POINTS = 50;
-
+var REVERSE_CUTOFF = 0.95;
 
 var genTravelPath = function(fromLat, fromLon, toLat, toLon){
 	var start = latLonToSphere(fromLat, fromLon, C.globe.EARTH_RAD);
@@ -34,7 +35,6 @@ var genTravelPath = function(fromLat, fromLon, toLat, toLon){
 	return curveObject;
  };
 
- var REVERSE_CUTOFF = 0.95;
 
  PathContainer.prototype.genLineAnimation = function(opts){
 	 var lastNoPoints;
@@ -43,18 +43,16 @@ var genTravelPath = function(fromLat, fromLon, toLat, toLon){
 		var line = genTravelPath.call(this, opts.fromLat, opts.fromLon, opts.toLat, opts.toLon);
 		return function lineAnimation(timeStepNorm){
 			if(timeStepNorm > 1 && lastNoPoints > NO_POINTS + 1){ return false; }
-			// var line = self.lines[self.lines.length-1];
 			var pointsToShow = lastNoPoints = Math.floor(lerp(0, NO_POINTS + 1, timeStepNorm));
-	// console.log("SHOWING POINTS: ", pointsToShow);
 			line.geometry.setDrawRange(0, pointsToShow);
 			return true;
 		};
 	 } else{
-		//  This is for reverse animations
+		//  Reverse animations below, need a bit of different behavior
 		var removedLine = false;
 		var initLineArrLen = self.lines.length;
 		return function lineAnimation(timeStepNorm){
-			if(removedLine) { return true; }
+			if(removedLine) { return false; }
 			if(timeStepNorm >= REVERSE_CUTOFF){
 				var toRemove = self.lines.splice(initLineArrLen - (opts.idx + 1));
 				self.target.remove(toRemove[0]);
