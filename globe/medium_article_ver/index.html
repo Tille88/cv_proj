@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Globe Medium Version</title>
+	<style>
+		#globe-scene-container {
+			width: 60vw;
+			height: 60vw;
+		}
+	</style>
+</head>
+<body>
+		<div id="globe-scene-container"></div>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/98/three.min.js"></script>
+		<!-- No CDN found including orbit controls... -->
+		<script src="./lib/OrbitControls.js"></script>
+		<script src="./data/lineData.js"></script>
+
+
+		<script>
+			// Globals
+			var scene, renderer, camera, controls;
+
+			var init = function(){
+				//////////////////////////////////////////////
+				// Get frame reference
+				var frame = document.getElementById('globe-scene-container');
+
+				//////////////////////////////////////////////
+				// Init scene
+				scene = new THREE.Scene();
+
+				//////////////////////////////////////////////
+				// Init camera
+				var cameraConfigs = {
+					FOV: 35,
+					ASPECT: frame.clientWidth/frame.clientHeight,
+					NEAR: 0.1,
+					FAR: 200,
+					INIT_POS: {
+						x: 2,
+						y: 0.6,
+						z: 4
+					}
+				};
+				camera = new THREE.PerspectiveCamera(
+					cameraConfigs.FOV,
+					cameraConfigs.ASPECT,
+					cameraConfigs.NEAR,
+					cameraConfigs.FAR
+				);
+				var pos = cameraConfigs.INIT_POS;
+				camera.position.set(pos.x, pos.y, pos.z);
+				// Setting up direction to make sure coordinate system used is correct
+				camera.up.set(0,0,1);
+				// Placement of globe will have center at [0,0,0]
+				camera.lookAt( 0,0,0 );
+
+				//////////////////////////////////////////////
+				// Init light and add to scene
+				var light = new THREE.AmbientLight(0x04040c);
+				scene.add(light);
+
+
+				//////////////////////////////////////////////
+				// Init GLOBE
+				var globeConfigs = {
+					WIDTH_SEGS: 16,
+					HEIGHT_SEGS: 16,
+					GLOBE_OPACITY: 0.7,
+					EARTH_RAD: 1,
+					MULTIPLIER: 1E-5,
+					COLOR: 0x04040c
+				};
+
+				// Sphere geometry
+				var earthGeometry = new THREE.SphereGeometry(
+					globeConfigs.EARTH_RAD,
+					globeConfigs.WIDTH_SEGS,
+					globeConfigs.HEIGHT_SEGS
+				);
+				var earthMaterial = new THREE.MeshBasicMaterial({
+					transparent: true,
+					opacity: globeConfigs.GLOBE_OPACITY,
+					color: globeConfigs.COLOR
+				});
+				var earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
+				earthMesh.position.set(0, 0, 0);
+
+				scene.add(earthMesh);
+
+				// Lines to add
+				var convertedLineData = prepareLineData(lineData, globeConfigs.EARTH_RAD, globeConfigs.MULTIPLIER);
+
+				var lineGroup = new THREE.Group();
+				var materialLine = new THREE.LineBasicMaterial({color: 0x1D4454});
+				for(var lat in convertedLineData){
+					convertedLineData[lat].forEach((arr) => {
+						var vectorArr = arr.map(p => new THREE.Vector3( p.x, p.y, p.z ));
+						if(vectorArr.length <= 1) { return; }
+						var curve = new THREE.CatmullRomCurve3(vectorArr);
+						var points = curve.getPoints( vectorArr.length*4 );
+						var geometry = new THREE.BufferGeometry().setFromPoints( points );
+						var curveObject = new THREE.Line( geometry, materialLine );
+						lineGroup.add(curveObject);
+					});
+				}
+
+				scene.add(lineGroup);
+
+				// Path to add
+				var LAT_LONS = {
+					// Stockholm
+					ST: {lat: 59.3, lon: 18.0},
+					// Shanghai
+					SH: {lat: 31.2, lon: 121.4},
+				};
+				var start = latLonToSphere(LAT_LONS.ST.lat, LAT_LONS.ST.lon, globeConfigs.EARTH_RAD);
+				var middle = latLonToSphere(
+					lerp(LAT_LONS.ST.lat, LAT_LONS.SH.lat, 0.5),
+					lerp(LAT_LONS.ST.lon, LAT_LONS.SH.lon, 0.5),
+					globeConfigs.EARTH_RAD + 0.5
+				);
+				var end = latLonToSphere(LAT_LONS.SH.lat, LAT_LONS.SH.lon, globeConfigs.EARTH_RAD);
+				var curve = new THREE.QuadraticBezierCurve3(
+					new THREE.Vector3( start.x, start.y, start.z ),
+					new THREE.Vector3( middle.x, middle.y, middle.z ),
+					new THREE.Vector3( end.x, end.y, end.z ),
+				);
+				var points = curve.getPoints(50);
+				var geometry = new THREE.BufferGeometry().setFromPoints( points );
+				var material = new THREE.LineBasicMaterial( { color : 0xff0000 } );
+				var curveObject = new THREE.Line( geometry, material );
+				scene.add(curveObject);
+
+				//////////////////////////////////////////////
+				// Init renderer
+				renderer = new THREE.WebGLRenderer({antialiasing : true});
+				renderer.setSize(frame.clientWidth, frame.clientHeight);
+				renderer.domElement.style.position = 'relative';
+				// Background set to black
+				renderer.setClearColor (0x000000, 1);
+				frame.appendChild(renderer.domElement);
+				// First render
+				renderer.render(scene, camera);
+
+				// Init controls
+				controls = new THREE.OrbitControls( camera );
+				controls.autoRotate = true;
+
+			};
+
+			// render loop function
+			var render = function render(){
+				controls.update();
+				renderer.render(scene, camera);
+				requestAnimationFrame(render);
+			};
+
+			///////////////////////////////////////////////
+			// HELPER FUNCTIONS
+			// Given the data formatting, converting to the globe coordinate system
+			var prepareLineData = function(lineData, zHeight, altMult) {
+				var newVals = {};
+				for(var lat in lineData){
+					newVals[lat] = [];
+					lineData[lat].forEach((arr) => {
+								var TBR = arr.map((coordObj) => {
+									return latLonToSphere(lat, coordObj.l, zHeight + coordObj.a*altMult);
+								});
+								newVals[lat].push(TBR);
+							});
+				};
+				return newVals;
+			};
+
+			var latLonToSphere = function(lat, lon, rad){
+					return {
+						x: rad * Math.cos(radians(lat))*Math.cos(radians(lon)),
+						y: rad * Math.cos(radians(lat))*Math.sin(radians(lon)),
+						z: rad * Math.sin(radians(lat))
+					};
+			};
+
+			var radians = function(deg){
+				return deg * Math.PI * 2 / 360;
+			};
+
+			// Linear interpolation
+			var lerp = function(a, b, n) {
+				return (1 - n) * a + n * b;
+			};
+
+
+
+			// Run two single functions, render into eternity
+			init();
+			render();
+
+		</script>
+
+</body>
+</html>
