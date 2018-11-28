@@ -4,3 +4,4 @@ node_modules
 dist
 fonts
 icons
+*-lock.json
