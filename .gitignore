@@ -1,4 +1,6 @@
-globe/node_modules
+node_modules
 .Rhistory
-globe/.cache
-globe/dist
+.cache
+dist
+fonts
+icons
