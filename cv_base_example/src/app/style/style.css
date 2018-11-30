@@ -5,13 +5,6 @@ body{
 svg text {
 	pointer-events: none;
 	user-select: none;
+	font-size: 14px;
 }
 
-/* @font-face {
-	font-family: 'jura';
-	src: url('../../../assets/ui/fonts/jura/jura.ttf');
-}
-
-p {
-	font-family: "jura", futura, sans-serif;
-} */
